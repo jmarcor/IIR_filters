@@ -1,0 +1,316 @@
+====================
+IIR filters library
+====================
+
+This library implements simple IIR filters in C.
+The library has been optimized for time performance.
+This implementation uses python scipy's lfilter as a base
+and several tests have been implemented (and are provided) to check 
+that both implementations match. Tests against Matlab have also been
+performed.
+
+Three different kinds of filters are implemented:
+
+IIR_S_filter: Simple filter with only 1 input signal 
+IIR_MS_filter: filter with a multiple number of input signals but having
+				the same coefficients (a and b) for all signals
+IIR_MD_filter: filter with a multiple number of input signals with 
+				different coefficients (a and b) for each signal
+
+====================
+How to use:
+====================   
+   The basic use is:
+   - Create the filter
+   - Add inputs
+   
+   Notes:
+   * The add input function will return the corresponding filter output
+   * The input and output for the simple input filter is a value of the IIR_signal_t type
+   * The input and output for the multiple inputs filters is an array of IIR_signal_t with
+		a size equal to the number of signals.
+   * You can change the filter coefficients.
+   * You can reset the filters
+   * You can query for the last output.
+   * Be careful with the multiple output filters as the last_output function returns the pointer
+	 to where it stores the last output. This does not interfere with computation of next outputs
+	 but if you change this array, next calls for the output will also be modified. You can ask
+	 for a copy, though.
+   * Upon creation, the coefficients are normalized so a0 is equal to 1.0. You can also use a
+     provided funciton for normalization.
+   * Be careful: when adding outputs, a0 is expected to be 1.0 and is not used in the computation.
+			so do not change a[0] of a filter 'on the fly'! Normalize before and then set all the coefficients
+			to the normalized values.
+   * Refer to the test code for examples of use.
+	 
+IMPORTANT: the functions are inlined so you need to use optimization level at least -O1 when compiling
+   
+   For actual code with examples of use, please look at the tests in the /test directory.
+   
+Signal type:
+   By default, the signal type is float. You can change your signal type
+   to double type by defining IIR_USE_SIGNAL_TYPE_DOUBLE during
+   compilation of your program (there is no need to recompile the library
+   as it is only composed of header files).
+   Other types could probably be used with small changes in the code by
+   defining the IIR_signal_t type to whatever is needed.
+
+====================
+Compilation:
+   There is no actual compilation in the sense of producing a library file.
+   All functions for the filters are inlined for better performance
+   (IMPORTANT: the functions are inlined so you need to use optimization
+   level at least -O1 when compiling)
+   Anyway, make will compile a series of tests and run them to check the
+   code works correctly. Tests for both float and double signal types are 
+   compiled and run.
+   Just go the directory where you cloned the repository and run:
+   > make
+
+Installation:
+   > make install
+   Will install the library in the default directory
+   /usr/local/include/IIR_filters . Note that all the funcions are inlined
+   so this library is only composed by 3 header files. There is no actual
+   object file to link to your program to use it. Installation just
+   copies the h files to the install directory.
+   To install to a different directory, use:
+   >  make install INSTALLDIR=<your_install_dir>
+
+Uninstallation:
+   > make uninstall
+   This will just delete the default /usr/local/include/IIR_filters directory.
+   If you installed to another directory, you can use:
+   >  make uninstall INSTALLDIR=<your_install_dir>
+   Or just delete the <your_install_dir> directory
+   
+OS:
+   This library was developed in a Linux environment. I also did a quick
+   compile and execute with DevCPP in Windows and all went well. The code
+   of the filters themselves is simple enough that it should compile in
+   any OS. It just uses stdio.h output functions and stdlib.h memory functions.
+
+====================
+API summary:
+====================
+Only the main function prototypes and their brief descriptions are included here.
+Refer to the code for more detailed information.
+
+Common (IIR_filters.h):
+	IIR_signal_t: type of the signals. Defaults to float (see compilation for details)
+	IIR_SIGNAL_TYPE: macro string with float or double, depending on the signal type selected
+	IIR_SIGNAL_FORMAT: convenience macro with the string format for the signal type:
+						"f" if float signals and "lf" if double signals
+	inline int IIR_normalize_coefs( int n_coefs, IIR_signal_t *b_coefs, IIR_signal_t *a_coefs ):
+			Normalize the coefficients so that a0 is 1.0
+
+IIR_S_filter (IIR_S_filter.h):
+	IIR_S_t:	
+		the S filter struct (refert to code for details)
+	IIR_S_t:
+		the MS filter struct (refert to code for details)
+		Main fields:
+			int n_signals: number of input signals
+			int n_coefs: number of coefficients (order+1)
+			IIR_signal_t *a: a coefficients (size: n_coefs)
+			IIR_signal_t *b: b coefficients (size: n_coefs)
+			IIR_signal_t *z: state values (size: n_coefs) (you can save and restore them)
+			IIR_signal_t last_output: last generated output
+	inline IIR_S_t *IIR_S_create(int n_coefs, const IIR_signal_t *b_coefs, const IIR_signal_t *a_coefs):
+		S filter creation. Normalizes the coefs upon creation.
+	inline IIR_signal_t IIR_S_add_input(IIR_S_t *filter, IIR_signal_t x)
+		Adds input x to the filter and return the corresponding output
+	#define IIR_S_get_last_output(filter):
+		return S filter last output generated
+	inline void IIR_S_reset(IIR_S_t *filter):
+		Return all previous state values and last output to 0
+	inline void IIR_S_destroy(IIR_S_t *filter):
+		Free resources allocated by the filter
+
+IIR_MS_filter:
+	IIR_MS_t:		
+		the MS filter struct (refert to code for details)
+		Main fields:
+			int n_signals: number of input signals
+			int n_coefs: number of coefficients (order+1)
+			IIR_signal_t *a: a coefficients (size: n_coefs)
+			IIR_signal_t *b: b coefficients (size: n_coefs)
+			IIR_signal_t *z: state values (size: n_coefs) (you can save and restore them)
+			IIR_signal_t *last_output: last generated output (size: n_signals)
+	#define IIR_MS_get_last_output(filter):
+		Returns a pointer to the last outputs for each signal. You can 
+		overwrite them without interfereing with the filter next outputs
+		but if you modify them, later calls to IIR_MS_get_last_output will
+		return the modified values.
+	#define IIR_MS_get_last_output_copy(filter):
+		Returns a pointer containing A COPY of the last outputs for each signal.
+		You will need to free it when not needed anymore.
+	#define IIR_MS_COEFS_A_INDEX(filter, i):
+		Convenience macro for changing A coefficients. Allows both read and write.
+	#define IIR_MS_COEFS_B_INDEX(filter, i):
+		Convenience macro for changing B coefficients. Allows both read and write.
+	inline IIR_MS_t *IIR_MS_create(int n_coefs, int n_signals,
+									const IIR_signal_t *b_coefs,
+									const IIR_signal_t *a_coefs):
+		Create an MS filter. Coefficients are normalized upon creation.
+	inline int IIR_MS_set_coefs(IIR_MS_t* filter, int n_coefs,
+								const IIR_signal_t *b_coefs,
+								const IIR_signal_t *a_coefs):
+		Sets the a and b coefficients of the MS filter. Normalizes the
+		coefficients upon creation.
+	inline IIR_signal_t *IIR_MS_add_input(IIR_MS_t *filter, const IIR_signal_t x[])
+		Add an input (one for each signal, so array of n_signal size) to the filter and
+		return a pointer the corresponding output (last_output, see note
+		on IIR_MS_get_last_output).
+	inline void IIR_MS_reset(IIR_S_t *filter):
+		Return all previous state values and last outputs to 0
+	#define IIR_MS_destroy(filter):
+		Free resources allocated by the filter
+		
+IIR_MD_filter:
+	IIR_MD_t:
+		the MD filter struct (refert to code for details)
+		Main fields:
+			int n_signals: number of input signals
+			int n_coefs: number of coefficients (order+1)
+			IIR_signal_t *a: a coefficients (size: n_coefs*n_signals)
+			IIR_signal_t *b: b coefficients (size: n_coefs*n_signals)
+			IIR_signal_t *z: state values (size: n_coefs) (you can save and restore them)
+			IIR_signal_t *last_output: last generated output (size: n_signals)
+	#define IIR_MD_get_last_output(filter):
+		Returns a pointer to the last outputs for each signal. You can 
+		overwrite them without interfereing with the filter next outputs
+		but if you modify them, later calls to IIR_MD_get_last_output will
+		return the modified values.
+	#define IIR_MD_get_last_output_copy(filter):
+		Returns a pointer containing A COPY of the last outputs for each signal.
+		You will need to free it when not needed anymore.
+	#define IIR_MD_COEFS_A_INDEX(filter, i, s)
+		Convenience macro for changing A coefficients. Allows both read and write.
+		i = coef index, s = signal index
+	#define IIR_MD_COEFS_B_INDEX(filter, i, s)
+		Convenience macro for changing B coefficients. Allows both read and write.
+		i = coef index, s = signal index
+	inline IIR_MD_t *IIR_MD_create(int n_coefs, int n_signals,
+									const IIR_signal_t *b_coefs,
+									const IIR_signal_t *a_coefs):
+		Create an MD filter. Coefficients are normalized upon creation.
+	inline int IIR_MD_set_coefs_one_signal(IIR_MD_t* filter, int n_coefs,
+									const IIR_signal_t *b_coefs,
+									const IIR_signal_t *a_coefs,
+									int signal_index):
+		Sets the a and b coefficients for signal i of the MD filter. Coefficients
+		are normalized when set.
+	inline int IIR_MD_set_coefs_all_signals(IIR_MD_t* filter, int n_coefs,
+									const IIR_signal_t *b_coefs,
+									const IIR_signal_t *a_coefs):
+		Sets the a and b coefficients for all the signals of the MD filter. Coefficients
+		are normalized when set.
+	inline IIR_signal_t *IIR_MD_add_input(IIR_MD_t *filter, const IIR_signal_t x[])
+		Add an input (one for each signal, so array of n_signal size) to the filter and
+		return a pointer the corresponding output (last_output, see note
+		on IIR_MD_get_last_output).
+	inline void IIR_MD_reset(IIR_S_t *filter):
+		Return all previous state values and last outputs to 0
+	#define IIR_MD_destroy(filter):
+		Free resources allocated by the filter
+
+====================
+Tests descriptions:
+====================
+
+Main tests:
+	In folder <your_install_dir>/test/ you can find several c test programs.
+	Their titles give a hint of what they do. They are quite simple. If you
+	want to have a look at them, the read load_test_reference_file.c/h file
+	implements base functions for loading/saving txt and binary files. Read
+	the following section (Python test programs) for information on the test
+	reference files formats.
+	Invoking >make in <your_install_dir>, all tests are built and run. The
+	built programs are stored in the <your_install_dir>/build/ folder.
+	The script <your_install_dir>/test/run_correctness_tests.sh runs all the
+	tests with appropriate input parameters (and shows the calls in screen).
+	You can use it as a references.
+
+
+Python test programs:
+	In folder <your_install_dir>/test/python you can find several programs:
+
+	generate_test_data_txt_file.py  <n_coefs> <butterworth_param> <output_filename_w/o_ext>:
+		generates two test files in txt format. One with normalized coefficients and another
+		with non-normalized coefficients.
+		Input params are:
+			n_coefs: number of coefficients of the butterworth filter (filter order+1)
+			butterworth_param: the only param to the butterworth filter in [0,1]
+			output_filename_w/o_ext: filename for the output without extensions
+				(_norm_coefs.txt and _not_norm_coefs.txt will be added)
+		The format of the output files is:
+			n_coefs(1 int), n_inputs(1 int) \n
+			a_coefs(n_coefs comma separated floats) \n
+			b_coefs(n_coefs comma separated floats) \n
+			inputs(n_inputs comma separated floats) \n
+			outputs(n_inputs comma separated floats) \n
+	
+	test_apply_scipy_filter_to_binary.py  <test_input_reference_bin_file>:
+		Loads a binary file, applies python scipy's lfilter function to the 
+		given input and saves the output as new a binary file, substituting
+		the input's file outputs by the scipy's lfilter outputs. It appends
+		the '_scipy.bin' suffix to the input filename for the output filename.
+		The format of the binary files is:
+		  int32 n_coefs;
+		  int32 n_inputs;
+		  char type;
+		  <The following values will be float32 if type == 'f' or double if type=='d'>
+		  float32/double a_coefs[n_coefs];
+		  float32/double b_coefs[n_coefs];
+		  float32/double inputs[n_inputs];
+		  float32/double outputs[n_inputs];
+
+	test_S_filter_correct_scipy.py <test_input_reference_bin_file>:
+		Loads a binary file and checks if the given output matches the output of the
+		python scipy's lfilter function.
+		The format of the binary file is:
+		  int32 n_coefs;
+		  int32 n_inputs;
+		  char type;
+		  <The following values will be float32 if type == 'f' or double if type=='d'>
+		  float32/double a_coefs[n_coefs];
+		  float32/double b_coefs[n_coefs];
+		  float32/double inputs[n_inputs];
+		  float32/double outputs[n_inputs];
+
+	generate_test_data_binary_files.sh:
+		This script generates all the binary and txt files used for the main tests and
+		copies them in the test folder.
+
+Comparing with Matlab/Octave:
+	File <your_install_dir>/test/matlab/test_binary_file_matlab.m is a small
+	script that loads a reference binary file (.bin), loads its info and
+	applies the Matlab/Octave filter and compares the outputs expected in the
+	file with those in calculated by Matlab/Octave. Use only double binary
+	files for this test as it is Matlab's/Octave's default data type. I
+	performed this test with both Matlab and Octave and found that the match
+	is bit by bit with Matlab (all differences == 0.0) while there are slight
+	differences in Octave (some are 0.0 and some are in the order of 1e-13).
+	I understand there is some difference in implementation. Anyway, I trust
+	the presented implementation as it matches perfectly Matlab's and Python
+	Scipy's filters.
+
+====================
+License
+====================
+
+# Copyright (C) 2018 Jose Marco de la Rosa
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+

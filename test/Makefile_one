@@ -1,0 +1,54 @@
+#### Compiler and tool definitions shared by all build targets #####
+CC = gcc
+BASICINC = -I../include
+BASICOPTS = -g -O3 -std=c11 $(BASICINC)
+CFLAGS = $(BASICOPTS) $(USEROPTS)
+
+INSTALLDIR = /usr/local/include/IIR_filters
+EXECUTABLES = $(patsubst %.c,%,$(wildcard test*.c))
+DEPS = load_test_reference_file.o
+TARGETDIR = ../build
+
+USERLIBS = $(addprefix $(TARGETDIR)/,$(DEPS)) $(SYSLIBS) 
+LDLIBS = $(USERLIBS)
+
+# Make everything and run the tests
+all: $(TARGETDIR) $(EXECUTABLES)
+	./run_correctness_tests.sh
+	@echo ""
+	@echo "Compilation, linking and testing finished"
+	@echo "Run 'make install' to install in the default directory ${INSTALLDIR}"
+	@echo "Run 'make install INSTALLDIR=<new_install_dir>' for installing to a different directory"
+	@echo "Or just copy ./include/*.h where you want your IIR files to be (only the headers are needed to use the filters)"
+
+# Compile dependencies to .o
+$(DEPS): $(TARGETDIR) load_test_reference_file.c
+	$(CC) $(CFLAGS) -o $(TARGETDIR)/$@ -c $(subst .o,.c,$@)
+
+# Make the executables, linking with the deps
+$(EXECUTABLES): $(DEPS)
+	$(CC) $(CFLAGS) -o $(TARGETDIR)/$@ $(LDLIBS) $@.c
+
+# Create the target directory (if needed)
+$(TARGETDIR):
+	mkdir -p $(TARGETDIR)
+
+#### Clean target deletes all generated files ####
+clean:
+	rm -f -r $(TARGETDIR)
+	@echo ""
+	@echo "Cleaning finished"
+	@echo "Run 'make uninstall' to remove the installed library files (if installed in the default ${INSTALLDIR})"
+	@echo "Run 'make uninstall INSTALLDIR=<new_install_dir>' to remove the installed in <new_install_dir>"
+
+#### Install target creates INSTALLDIR and copies the headers to it
+install:
+	mkdir -p $(INSTALLDIR)
+	cp ../include/* $(INSTALLDIR)
+	@echo ""
+	@echo "Installation finished"
+
+#### Uninstall target just removes the INSTALLDIR
+uninstall:
+	rm -f -r $(INSTALLDIR)
+	echo "Uninstallation finished"
