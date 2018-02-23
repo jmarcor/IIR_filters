@@ -217,8 +217,8 @@ inline void _IIR_M_destroy(IIR_M_t *filter) {
 
 // Macros for indexing the a and b coefs
 // They can be used both for reading and writing
-#define IIR_MS_COEFS_A_INDEX(filter, i) filter->a_coefs[i]
-#define IIR_MS_COEFS_B_INDEX(filter, i) filter->b_coefs[i]
+#define IIR_MS_COEFS_A_INDEX(filter, i) filter->a[i]
+#define IIR_MS_COEFS_B_INDEX(filter, i) filter->b[i]
 
 // Just a call to the general creation for multi signal IIR
 // See the _IIR_MS_create function doc
