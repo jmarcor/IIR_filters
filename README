@@ -103,6 +103,7 @@ Common (IIR_filters.h):
 						"f" if float signals and "lf" if double signals
 	inline int IIR_normalize_coefs( int n_coefs, IIR_signal_t *b_coefs, IIR_signal_t *a_coefs ):
 			Normalize the coefficients so that a0 is 1.0
+			Fails if an a0 == 0 if found!
 
 IIR_S_filter (IIR_S_filter.h):
 	IIR_S_t:	
@@ -214,6 +215,12 @@ IIR_MD_filter:
 		Return all previous state values and last outputs to 0
 	#define IIR_MD_destroy(filter):
 		Free resources allocated by the filter
+	inline int IIR_MD_normalize_all_coefs(IIR_MD_t* filter) {
+		This function normalizes all the coefficients in an MD filter
+		It cycles through all the a/b coefs sets and applies normalization
+		It operates directly in the arrays storing the actual filters so changes
+		can't be undone
+		Fails if an a0 == 0 if found!
 
 ====================
 Tests descriptions:

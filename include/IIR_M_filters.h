@@ -240,8 +240,6 @@ inline int IIR_MS_set_coefs(IIR_MS_t* filter,
 			    const IIR_signal_t *b_coefs,
 			    const IIR_signal_t *a_coefs) {
 
-    int i;
-
     // Check that you are passing the appropriate number of coefs
     if ( (n_coefs != filter->n_coefs) || (!a_coefs) || (!b_coefs) ) {
 
@@ -325,8 +323,6 @@ inline int IIR_MD_set_coefs_one_signal(IIR_MD_t* filter,
 					const IIR_signal_t *b_coefs,
 					const IIR_signal_t *a_coefs,
 					int signal_index) {
-    
-    int i;
 
     // Check that you are passing the appropriate number of coefs and is multi_coefs filter
     if ( (n_coefs != filter->n_coefs) || (!a_coefs) || (!b_coefs) ) {
@@ -352,10 +348,6 @@ inline int IIR_MD_set_coefs_one_signal(IIR_MD_t* filter,
 
     return 1;
 }
-
-// Fills in the a and/or b coefficients of the filter
-// returns 0 on fail (given number of coefs does not agree with filters coefs)
-
 
 // Fills in the a and/or b coefficients of the filter for all the input signal.
 // This function should only be used with MD filters.
@@ -436,6 +428,35 @@ inline IIR_signal_t *IIR_MD_add_input(IIR_MD_t *filter, const IIR_signal_t x[]) 
 
 // Free all the memory allocated by the MD filter.
 #define IIR_MD_destroy(filter) _IIR_M_destroy(filter)
+
+// This function normalizes all the coefficients in an MD filter
+// It cycles through all the a/b coefs sets and applies normalization
+// It operates directly in the arrays storing the actual filters so changes
+// can't be undone
+inline int IIR_MD_normalize_all_coefs(IIR_MD_t* filter) {
+    
+    // Error if filter is null
+    if ( !filter ){
+	return 0;
+    }
+
+    int i;
+    int n_coefs = filter->n_coefs;
+    IIR_signal_t *a_base = filter->a;
+    IIR_signal_t *b_base = filter->b;
+    
+    for ( i=0; i<filter->n_signals; i++ ){
+	// Return error if normalization fails!
+	if ( !IIR_normalize_coefs( n_coefs, b_base, a_base) ){
+	    return 0;
+	}
+	// Step to coefs for the next signal
+	b_base += n_coefs;
+	a_base += n_coefs;
+    }
+    
+    return 1;
+}    
 
 #ifdef __cplusplus
 }

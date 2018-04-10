@@ -54,8 +54,6 @@ inline IIR_S_t *IIR_S_create(int n_coefs,
 			    const IIR_signal_t *b_coefs,
 			    const IIR_signal_t *a_coefs) {
 
-    int i;
-
     // Check the number of coefs. Minimum is order 1, which means two coefs
     if (n_coefs <= 1) {
 	fprintf(stderr,
