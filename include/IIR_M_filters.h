@@ -51,8 +51,8 @@ typedef struct {
  ******************************************************/
 
 // A couple of forward declarations are needed
-inline int IIR_MD_set_coefs_all_signals(IIR_MD_t* filter, int n_coefs, const IIR_signal_t *a_coefs, const IIR_signal_t *b_coefs);
-inline int IIR_MS_set_coefs(IIR_MS_t* filter, int n_coefs, const IIR_signal_t *a_coefs, const IIR_signal_t *b_coefs);
+inline int IIR_MD_set_coefs_all_signals(IIR_MD_t* filter, int n_coefs, const IIR_signal_t *b_coefs, const IIR_signal_t *a_coefs);
+inline int IIR_MS_set_coefs(IIR_MS_t* filter, int n_coefs, const IIR_signal_t *b_coefs, const IIR_signal_t *a_coefs);
 
 /*
  * Create a new multi signal IIR filter with shared a and b coefficients
